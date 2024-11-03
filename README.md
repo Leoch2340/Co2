@@ -48,4 +48,11 @@
 &nbsp;&nbsp;&nbsp;&nbsp;Запуск - python dependency_visualizer.py --package graphviz --output graph.dot --depth 2 --graphviz-path /usr/bin/dot --repo-url https://github.com/Leoch2340/Co2<br/>
 &nbsp;&nbsp;&nbsp;&nbsp;Запуск тестов - python -m unittest test_dependency_visualizer.py<br/> 
 
+4. Примеры использования в виде скриншотов, желательно в анимированном/видео формате, доступном для web-просмотра:<br/>
+
+![изображение](https://github.com/user-attachments/assets/a1c0b9f3-dbcc-4019-9074-9aae1075328b)
+
+
+&nbsp;&nbsp;&nbsp;&nbsp;![изображение](https://github.com/user-attachments/assets/7713b9e2-37e8-4eb6-b658-86f7676149fb)
+&nbsp;&nbsp;&nbsp;&nbsp;Тесты<br/>
 
