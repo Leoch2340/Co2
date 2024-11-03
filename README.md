@@ -42,4 +42,10 @@
 &nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp; - **Путь к файлу-результату** (`--output`): опциональный путь к файлу, в который будет сохранен результат в формате Graphviz.
 &nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp; - **Максимальная глубина анализа зависимостей** (`--depth`): задает, насколько глубоко будут исследоваться зависимости (по умолчанию 1).
 &nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp; - **URL-адрес репозитория** (`--repo-url`): дополнительный параметр, который может использоваться для указания URL репозитория, связанного с пакетом.
-   
+
+3. Описание команд для сборки проекта:<br/>
+
+&nbsp;&nbsp;&nbsp;&nbsp;Запуск - python dependency_visualizer.py --package graphviz --output graph.dot --depth 2 --graphviz-path /usr/bin/dot --repo-url https://github.com/Leoch2340/Co2<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;Запуск тестов - python -m unittest test_dependency_visualizer.py<br/> 
+
+
