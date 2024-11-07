@@ -1,80 +1,80 @@
 import argparse
-import importlib.metadata
+import requests
 from graphviz import Digraph
 
 
-# 1. Получение зависимостей пакета
-def get_dependencies(package_name):
-    """Получает зависимости пакета по его имени."""
+# 1. Получение зависимостей пакета с использованием репозитория
+def get_dependencies(package_name, repo_url=None):
+    """Получает зависимости пакета по его имени из указанного репозитория."""
     try:
-        # Получаем информацию о дистрибутиве пакета по имени
-        dist = importlib.metadata.distribution(package_name)
-        # Извлекаем зависимости, если они есть, или возвращаем пустой список
-        dependencies = dist.requires or []
-        # Возвращаем список зависимостей без версионных ограничений
+        # Проверяем, если указан URL репозитория, используем его для получения зависимостей
+        if repo_url:
+            response = requests.get(f"{repo_url}/{package_name}/dependencies")
+            response.raise_for_status()
+            dependencies = response.json().get("dependencies", [])
+        else:
+            # Альтернативный вариант получения зависимостей (на случай отсутствия URL)
+            print("URL репозитория не указан, невозможно получить зависимости.")
+            return []
+
+        # Убираем версионные ограничения
         return [dep.split()[0] for dep in dependencies]
-    except importlib.metadata.PackageNotFoundError:
-        # Если пакет не найден, выводим сообщение об ошибке
-        print(f"Пакет {package_name} не найден.")
-        return []  # Возвращаем пустой список
+    except requests.exceptions.RequestException as e:
+        # Обработка ошибок, если запрос к URL не удался
+        print(f"Ошибка при получении зависимостей пакета {package_name}: {e}")
+        return []
 
 
 # 2. Построение графа зависимостей
-def build_dependency_graph(package_name, max_depth, current_depth=0, graph=None):
+def build_dependency_graph(package_name, max_depth, current_depth=0, graph=None, repo_url=None):
     """Рекурсивно строит граф зависимостей до указанной глубины."""
     if graph is None:
-        # Инициализируем пустой граф, если он не был передан
         graph = {}
 
     if current_depth > max_depth:
-        # Если текущая глубина превышает максимальную, завершаем рекурсию
         return graph
 
-    # Получаем зависимости для текущего пакета
-    dependencies = get_dependencies(package_name)
-    # Добавляем пакет и его зависимости в граф
+    dependencies = get_dependencies(package_name, repo_url)
     graph[package_name] = dependencies
 
     for dep in dependencies:
-        # Для каждой зависимости проверяем, была ли она уже добавлена в граф
-        if dep not in graph:  # Чтобы избежать зацикливания
-            # Рекурсивно строим граф для зависимостей
-            build_dependency_graph(dep, max_depth, current_depth + 1, graph)
+        if dep not in graph:  # Избегаем зацикливания
+            build_dependency_graph(dep, max_depth, current_depth + 1, graph, repo_url)
 
-    return graph  # Возвращаем построенный граф зависимостей
+    return graph
 
 
 # 3. Генерация Graphviz кода
 def generate_graphviz_code(graph):
     """Генерирует код Graphviz для визуализации графа зависимостей."""
-    dot = Digraph(comment="Dependency Graph")  # Создаем новый объект графа с комментарием
+    dot = Digraph(comment="Dependency Graph")
 
     for package, dependencies in graph.items():
-        dot.node(package)  # Добавляем узел для каждого пакета
+        dot.node(package)
         for dep in dependencies:
-            dot.edge(package, dep)  # Создаем ребро между пакетом и его зависимостью
+            dot.edge(package, dep)
 
-    return dot.source  # Возвращаем сгенерированный код Graphviz
+    return dot.source
 
 
 # 4. Обработка аргументов командной строки
 def parse_args():
-    parser = argparse.ArgumentParser(description="Граф зависимостей Python-пакетов.")  # Создаем парсер аргументов
-    parser.add_argument("--package", type=str, required=True, help="Имя анализируемого пакета")  # Обязательный аргумент для имени пакета
-    parser.add_argument("--output", type=str, help="Путь к файлу для сохранения результата (необязательно)")  # Необязательный аргумент для сохранения графа
-    parser.add_argument("--depth", type=int, default=1, help="Максимальная глубина анализа зависимостей")  # Максимальная глубина анализа
-    parser.add_argument("--graphviz-path", type=str, help="Путь к программе Graphviz")  # Путь к исполняемому файлу Graphviz
-    parser.add_argument("--repo-url", type=str, help="URL репозитория")
+    parser = argparse.ArgumentParser(description="Граф зависимостей Python-пакетов.")
+    parser.add_argument("--package", type=str, required=True, help="Имя анализируемого пакета")
+    parser.add_argument("--output", type=str, help="Путь к файлу для сохранения результата (необязательно)")
+    parser.add_argument("--depth", type=int, default=1, help="Максимальная глубина анализа зависимостей")
+    parser.add_argument("--graphviz-path", type=str, help="Путь к программе Graphviz")
+    parser.add_argument("--repo-url", type=str, required=True, help="URL репозитория")
 
-    return parser.parse_args()  # Возвращаем разобранные аргументы
+    return parser.parse_args()
 
 
 # 5. Основная функция
 def main():
-    args = parse_args()  # Получаем аргументы командной строки
+    args = parse_args()
 
-    # Строим граф зависимостей
-    dependency_graph = build_dependency_graph(args.package, args.depth)
+    # Строим граф зависимостей, передаем URL репозитория
+    dependency_graph = build_dependency_graph(args.package, args.depth, repo_url=args.repo_url)
 
     # Генерируем Graphviz код
     graphviz_code = generate_graphviz_code(dependency_graph)
@@ -84,13 +84,13 @@ def main():
 
     # Сохраняем результат в файл, если указан
     if args.output:
-        with open(args.output, 'w') as f:  # Открываем файл для записи
-            f.write(graphviz_code)  # Записываем сгенерированный код в файл
-        print(f"Граф зависимостей сохранен в {args.output}")  # Сообщаем о сохранении
+        with open(args.output, 'w') as f:
+            f.write(graphviz_code)
+        print(f"Граф зависимостей сохранен в {args.output}")
 
 
 # Запуск программы
 if __name__ == "__main__":
-    main()  # Вызываем основную функцию для запуска программы
+    main()
 
-# python dependency_visualizer.py --package graphviz --output graph.dot --depth 2 --graphviz-path /usr/bin/dot --repo-url https://github.com/Leoch2340/Co2
+# python dependency_visualizer.py --package graphviz --output graph.dot --depth 2 --graphviz-path /usr/bin/dot --repo-url https://github.com/graphp/graphviz
